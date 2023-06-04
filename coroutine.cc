@@ -4,14 +4,14 @@
 #include <cstring>
 #include <cassert>
 
-#define MAIN_CTX (Schedule::instance()->main_ctx)
-#define MAIN_STACK (Schedule::instance()->main_stack)
+#define MAIN_CTX (SingleSchedule::instance()->main_ctx)
+#define MAIN_STACK (SingleSchedule::instance()->main_stack)
 
 namespace coroutine
 {
 Coroutine::Coroutine() :
   m_buffer(nullptr), m_stack_size(0),
-  m_capacity(0), m_status(co_status::READY), m_id(-1) {
+  m_capacity(0), m_status(co_status::READY), m_id(INVALID_HANDLE) {
 }
 
 Coroutine::~Coroutine() {
@@ -49,7 +49,7 @@ void Coroutine::destroy() {
 }
 
 void Coroutine::save_stack() {
-  const char *stack_bottom = Schedule::instance()->get_stack_bottom();
+  const char *stack_bottom = SingleSchedule::instance()->get_stack_bottom();
   char dummy = 0;
 
   auto used_stack = stack_bottom - &dummy;
@@ -66,7 +66,7 @@ void Coroutine::save_stack() {
 }
 
 void Coroutine::load_stack() {
-  void *p = Schedule::instance()->get_stack_bottom() - m_stack_size;
+  void *p = SingleSchedule::instance()->get_stack_bottom() - m_stack_size;
   memcpy(p, m_buffer, m_stack_size);
 }
 

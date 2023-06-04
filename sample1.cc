@@ -38,6 +38,7 @@ void process() {
 
 int main()
 {
+  auto SPtr = SingleSchedule::instance();
   std::shared_ptr<Coroutine> ct1(new Logic1());
   std::shared_ptr<Coroutine> ct2(new Logic2());
   std::shared_ptr<Coroutine> ct3(new Logic3());
@@ -46,27 +47,27 @@ int main()
   ct2->set_id(2);
   ct3->set_id(3);
 
-  Schedule::instance()->coroutine_new(ct1.get());
-  Schedule::instance()->coroutine_new(ct2.get());
-  Schedule::instance()->coroutine_new(ct3.get());
+  SPtr->coroutine_new(ct1.get());
+  SPtr->coroutine_new(ct2.get());
+  SPtr->coroutine_new(ct3.get());
 
-  Schedule::instance()->resume(1);
-  Schedule::instance()->resume(2);
-  Schedule::instance()->resume(3);
-  Schedule::instance()->resume(1);
-  Schedule::instance()->resume(2);
-  Schedule::instance()->resume(3);
-  Schedule::instance()->resume(1);
-  Schedule::instance()->resume(2);
-  Schedule::instance()->resume(3);
+  SPtr->resume(1);
+  SPtr->resume(2);
+  SPtr->resume(3);
+  SPtr->resume(1);
+  SPtr->resume(2);
+  SPtr->resume(3);
+  SPtr->resume(1);
+  SPtr->resume(2);
+  SPtr->resume(3);
 
 
-  // SingleSchedule::instance()->remove(1);
-  // SingleSchedule::instance()->remove(2);
-  // SingleSchedule::instance()->remove(3);
+  SPtr->destroy(1);
+  SPtr->destroy(2);
+  SPtr->destroy(3);
 
-  // SingleSchedule::instance()->free_coroutine();
-  int count = Schedule::instance()->count();
+  SPtr->free_coroutine();
+  int count = SPtr->count();
   printf("count: %d\n", count);
 
   return 0;

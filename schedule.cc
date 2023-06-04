@@ -1,7 +1,11 @@
-#include <ucontext.h>
 #include <map>
+#include <stdexcept>
+#include <algorithm>
+#include <utility>
+
+#include <ucontext.h>
+
 #include "schedule.hh"
-#include <cstdio>
 
 namespace coroutine
 {
@@ -13,37 +17,53 @@ void Schedule::co_entry(void *vco) {
 }
 
 void Schedule::coroutine_new(Coroutine* co) {
+  if (m_co_pool.size() > m_capacity) return; // full
+
   co_handle id = co->get_id();
-  if (auto it = co_pool.find(id); it != co_pool.end()) { co_pool.erase(it); }
+  if (auto it = m_co_pool.find(id); it != m_co_pool.end()) { m_co_pool.erase(it); }
 
   getcontext(&co->m_ctx);
   co->m_ctx.uc_stack.ss_flags = 0;
-  co->m_ctx.uc_stack.ss_sp = &main_stack[0];
+  co->m_ctx.uc_stack.ss_sp = main_stack;
   co->m_ctx.uc_stack.ss_size = MAX_STACK_SIZE;
 
   co->m_ctx.uc_link = &main_ctx;
-  co_pool[id] = co;
+  m_co_pool[id] = co;
 
   makecontext(&(co->m_ctx), (void(*)())&Schedule::co_entry, 1, static_cast<void*>(co));
-  // swapcontext(&main_ctx, &co->m_ctx);
 }
 
 void Schedule::resume(co_handle handle) {
-  if (co_pool[handle] && (co_pool[handle]->get_status() == co_status::SUSPEND || co_pool[handle]->get_status() == co_status::READY)) {
-    co_pool[handle]->resume();
-    current_handle = handle;
+  if (auto it = m_co_pool.find(handle); it != m_co_pool.end()) {
+    co_status status = it->second->get_status();
+    if (status == co_status::SUSPEND || status == co_status::READY) {
+      it->second->resume();
+      m_current_handle = handle;
+    }
   } else {
-    // handle isn't available
+    // no matched coroutine
+    throw std::runtime_error("no matched coroutine");
   }
 }
 
 void Schedule::destroy(co_handle handle) {
-  if (co_pool[handle]) {
-    co_pool[handle]->destroy();
-    current_handle = -1;
+  if (auto it = m_co_pool.find(handle); it != m_co_pool.end()) {
+    it->second->destroy();
   } else {
-    // handle isn't available
+    // no matched coroutine
+    throw std::runtime_error("no matched coroutine");
   }
 }
 
+
+void Schedule::free_coroutine() {
+  for (auto it = m_co_pool.begin(); it != m_co_pool.end();) {
+    if (it->second->get_status() == co_status::DEAD) {
+      it = m_co_pool.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
+
+}  // namespace coroutine
