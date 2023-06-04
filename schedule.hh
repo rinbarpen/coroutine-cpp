@@ -53,6 +53,7 @@ public:
     return instance;
   }
 
+private:
   SingleSchedule() = default;
 
   SingleSchedule(SingleSchedule&&) = delete;
