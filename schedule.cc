@@ -17,9 +17,7 @@ void Schedule::co_entry(void *vco) {
 }
 
 void Schedule::coroutine_new(Coroutine* co) {
-  if (m_co_pool.size() > m_capacity) return; // full
-
-  co_handle id = co->get_id();
+  co_handle id = co->get_handle();
   if (auto it = m_co_pool.find(id); it != m_co_pool.end()) { m_co_pool.erase(it); }
 
   getcontext(&co->m_ctx);

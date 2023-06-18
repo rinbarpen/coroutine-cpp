@@ -43,9 +43,9 @@ int main()
   std::shared_ptr<Coroutine> ct2(new Logic2());
   std::shared_ptr<Coroutine> ct3(new Logic3());
 
-  ct1->set_id(1);
-  ct2->set_id(2);
-  ct3->set_id(3);
+  // ct1->set_id(1);
+  // ct2->set_id(2);
+  // ct3->set_id(3);
 
   SPtr->coroutine_new(ct1.get());
   SPtr->coroutine_new(ct2.get());

@@ -1,5 +1,6 @@
 #include "coroutine.hh"
 #include "schedule.hh"
+
 #include <stdexcept>
 #include <cstring>
 #include <cassert>
@@ -7,11 +8,22 @@
 #define MAIN_CTX (SingleSchedule::instance()->main_ctx)
 #define MAIN_STACK (SingleSchedule::instance()->main_stack)
 
+#ifdef CO_AUTO_ASSIGN
+using co_handle = int32_t;
+extern std::atomic<co_handle> co_next_handle;
+#endif
+
 namespace coroutine
 {
 Coroutine::Coroutine() :
   m_buffer(nullptr), m_stack_size(0),
-  m_capacity(0), m_status(co_status::READY), m_id(INVALID_HANDLE) {
+  m_capacity(0), m_status(co_status::READY),
+#ifdef CO_AUTO_ASSIGN
+  m_handle(co_next_handle++)
+#else
+  m_handle(INVALID_HANDLE)
+#endif
+{
 }
 
 Coroutine::~Coroutine() {

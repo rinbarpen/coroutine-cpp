@@ -3,10 +3,13 @@
 #include <ucontext.h>
 #include <inttypes.h>
 
-#define INVALID_HANDLE (-1)
+#include <atomic>
+#include <functional>
+#include <type_traits>
 
-#define __CO_AUTO_ASSIGN__
-#undef  __CO_AUTO_ASSIGN__
+#define CO_AUTO_ASSIGN
+
+#define INVALID_HANDLE (-1)
 
 namespace coroutine
 {
@@ -19,6 +22,10 @@ enum co_status {
 
 using co_handle = int32_t;
 
+#ifdef CO_AUTO_ASSIGN
+static std::atomic<co_handle> co_next_handle{1};
+#endif
+
 class Coroutine {
 public:
   Coroutine();
@@ -27,21 +34,24 @@ public:
   Coroutine(Coroutine&&) = default;
   Coroutine& operator=(Coroutine&& other) = default;
 
-  virtual void resume();
-  virtual void yield();
-  virtual void destroy();
+  void resume();
+  void yield();
+  void destroy();
   virtual void process() = 0;
 
-  #ifdef CO_AUTO_ASSIGN
-  // automatically assign a handle and return the handle assigned
-  [[nodiscard]] static co_handle get_handle() { m_id = next_id++; return m_id; }
-  #else
-  void set_id(co_handle handle) { m_id = handle; }
-  #endif
-
+  co_handle get_handle() { return m_handle; }
   void set_status(co_status status) { m_status = status; }
   co_status get_status() { return m_status; }
-  co_handle get_id() { return m_id; }
+
+  Coroutine(Coroutine&) = delete;
+  Coroutine& operator=(Coroutine&) = delete;
+
+#ifdef CO_AUTO_ASSIGN
+private:
+#else
+public:
+#endif
+  void set_id(co_handle handle) { m_handle = handle; }
 protected:
   void save_stack();
   void load_stack();
@@ -52,17 +62,7 @@ private:
   int m_stack_size;  // current stack size
   int m_capacity;  // stack capacity
   co_status m_status;
-  co_handle m_id;
+  co_handle m_handle;
 };
 
-#ifdef CO_AUTO_ASSIGN
-static co_handle next_id = 0;
-#endif
-
 }  // namespace coroutine
-
-#define BEGIN_COROUTINE(name) \
-  class name : public Coroutine {
-
-#define END_COROUTINE(name) \
-  };
